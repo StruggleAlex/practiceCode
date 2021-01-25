@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  * 多线程下，该主机，该程序的并发客户端被分配到多个selector上
  * 注意，每个客户端，只绑定到其中一个selector ，不会产生交互问题
  */
-public class SelectorThread implements Runnable{
+public class SelectorThread extends ThreadLocal<LinkedBlockingDeque<Channel>> implements Runnable{
 
     Selector selector = null;
 
@@ -20,7 +20,15 @@ public class SelectorThread implements Runnable{
     /**
      * 队列  堆里的对象，线程的栈是独立的，堆是共享的
      */
-    LinkedBlockingDeque<Channel> lbq = new LinkedBlockingDeque<>();
+//    LinkedBlockingDeque<Channel> lbq = new LinkedBlockingDeque<>()
+            //每个线程持有
+    LinkedBlockingDeque<Channel> lbq = get();
+
+    @Override
+    protected LinkedBlockingDeque<Channel> initialValue() {
+        //poll
+        return new LinkedBlockingDeque<>();
+    }
 
     public SelectorThread(SelectThreadGroup stg) {
         try {
