@@ -16,15 +16,15 @@ public class SelectorThread implements Runnable{
 
     Selector selector = null;
 
-    SelectThreaGroup selectThreaGroup;
+    SelectThreadGroup selectThreadGroup;
     /**
      * 队列  堆里的对象，线程的栈是独立的，堆是共享的
      */
     LinkedBlockingDeque<Channel> lbq = new LinkedBlockingDeque<>();
 
-    public SelectorThread(SelectThreaGroup stg) {
+    public SelectorThread(SelectThreadGroup stg) {
         try {
-            this.selectThreaGroup = stg;
+            this.selectThreadGroup = stg;
             selector = Selector.open();
         } catch (IOException e) {
             e.printStackTrace();
@@ -37,9 +37,9 @@ public class SelectorThread implements Runnable{
         while (true) {
             try {
                 //1.select  阻塞 wakeup
-                System.out.println(Thread.currentThread().getName()+"   :  before select...."+ selector.keys().size());
+//                System.out.println(Thread.currentThread().getName()+"   :  before select...."+ selector.keys().size());
                 int nums = selector.select();  //阻塞  wakeup()
-                System.out.println(Thread.currentThread().getName()+"   :  after select...." + selector.keys().size());
+//                System.out.println(Thread.currentThread().getName()+"   :  after select...." + selector.keys().size());
                 if (nums > 0) {
                     //2.處理selectKeys
                     Set<SelectionKey> keys = selector.selectedKeys();
@@ -125,7 +125,7 @@ public class SelectorThread implements Runnable{
             client.configureBlocking(false);
             // 选择一个selector 并且注册
 //            selectThreaGroup.nextSelector(client);
-            selectThreaGroup.nextSelectorV2(client);
+            selectThreadGroup.nextSelectorV2(client);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -133,4 +133,7 @@ public class SelectorThread implements Runnable{
 
     }
 
+    public void setWorker(SelectThreadGroup stgWorker) {
+        this.selectThreadGroup = stgWorker;
+    }
 }

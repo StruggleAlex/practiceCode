@@ -2,13 +2,10 @@ package com.example.testreactor;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.Channel;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SelectThreaGroup {
+public class SelectThreadGroup {
     /**
      * 线程组
      */
@@ -20,12 +17,16 @@ public class SelectThreaGroup {
 
     AtomicInteger xid = new AtomicInteger(0);
 
+    SelectThreadGroup stg=this;
+    public  void  setWorker(SelectThreadGroup stg) {
+        this.stg = stg;
+    }
 
     /**
      *
      * @param num 线程数
      */
-    public SelectThreaGroup(int num) {
+    public SelectThreadGroup(int num) {
         group = new SelectorThread[num];
         for (int i = 0; i < num; i++) {
             group[i]=new SelectorThread(this);
@@ -45,16 +46,51 @@ public class SelectThreaGroup {
             server.configureBlocking(false);
             server.bind(new InetSocketAddress(port));
             //注册到哪一个selector上
-            nextSelector(server);
+            nextSelector3(server);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private void nextSelector3(ServerSocketChannel server) {
+    }
 
-    private SelectorThread next() {
+    /**
+     * 动用worker的线程分配
+     * @return
+     */
+    private SelectorThread nextV3() {
         int index = xid.incrementAndGet() % group.length;
         return group[index];
+    }
+
+    public void nextSelectorV3(Channel c) {
+
+        try {
+            if(c instanceof  ServerSocketChannel){
+                SelectorThread st = next();  //listen 选择了 boss组中的一个线程后，要更新这个线程的work组
+                st.lbq.put(c);
+                st.setWorker(stg);
+                st.selector.wakeup();
+            }else {
+                SelectorThread st = nextV3();  //在 main线程种，取到堆里的selectorThread对象
+
+                //1,通过队列传递数据 消息
+                st.lbq.add(c);
+                //2,通过打断阻塞，让对应的线程去自己在打断后完成注册selector
+                st.selector.wakeup();
+
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private SelectorThread next() {
+        int index = xid.incrementAndGet() % stg.group.length;
+        return stg.group[index];
     }
 
     /**
