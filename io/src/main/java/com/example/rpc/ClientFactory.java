@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ClientFactory {
 
-    int poolSize = 1;
+    int poolSize = 10;
 
     ConcurrentHashMap<InetSocketAddress, ClientPool> outboxs = new ConcurrentHashMap<>();
 
@@ -70,6 +70,7 @@ public class ClientFactory {
                     @Override
                     protected void initChannel(NioSocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ServerDecode());
                         p.addLast(new ClientResponses());
                     }
                 }).connect(address);

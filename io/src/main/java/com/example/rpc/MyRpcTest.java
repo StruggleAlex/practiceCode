@@ -13,13 +13,15 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 1，先假设一个需求，写一个RPC
@@ -33,7 +35,7 @@ public class MyRpcTest {
 
     @Test
     public void startServer() {
-        NioEventLoopGroup boss = new NioEventLoopGroup(1);
+        NioEventLoopGroup boss = new NioEventLoopGroup(10);
         NioEventLoopGroup worker = boss;
 
         ServerBootstrap sbs = new ServerBootstrap();
@@ -45,6 +47,7 @@ public class MyRpcTest {
                     protected void initChannel(NioSocketChannel ch) throws Exception {
                         System.out.println("server accept client port:" + ch.remoteAddress().getPort());
                         ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ServerDecode());
                         p.addLast(new ServerRequestHandler());
                     }
                 }).bind(new InetSocketAddress("localhost", 9090));
@@ -69,8 +72,30 @@ public class MyRpcTest {
         }).start();
 
         System.out.println("server started ....");
-        Car car = getProxy(Car.class);
-        car.run("car");
+
+
+        AtomicInteger num = new AtomicInteger(0);
+        int size = 20;
+        Thread[] threads = new Thread[size];
+        for (int i = 0; i <size; i++) {
+            threads[i] = new Thread(()->{
+                Car car = getProxy(Car.class);
+                String arg = "car" + num.incrementAndGet();
+                String res = car.run(arg);
+                System.out.println("client over msg "+res+ " src arg: "+arg);
+            });
+        }
+
+        for (Thread thread : threads) {
+            thread.start();
+        }
+
+
+        try {
+            System.in.read();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         /*Bus bus = getProxy(Bus.class);
         bus.run("bus");*/
@@ -117,26 +142,22 @@ public class MyRpcTest {
 
                 //4.发送 -》通过 io -out （使用netty）
                 ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer(msgHeader.length + msgBody.length);
-                CountDownLatch countDownLatch = new CountDownLatch(1);
+//                CountDownLatch countDownLatch = new CountDownLatch(1);
+                CompletableFuture<String> res = new CompletableFuture<>();
                 long requestID = header.getRequestID();
-                ResponseHandler.addCallBack(requestID, new Runnable() {
-                    @Override
-                    public void run() {
-                        countDownLatch.countDown();
-                    }
-                });
+                ResponseMappingCallBack.addCallBack(requestID,res);
                 byteBuf.writeBytes(msgHeader);
                 byteBuf.writeBytes(msgBody);
                 ChannelFuture channelFuture = clientChannel.writeAndFlush(byteBuf);
                 //io是双向的， sync 仅代表 out
                 channelFuture.sync();
-                System.out.println("header len "+msgHeader.length);
+//                System.out.println("header len "+msgHeader.length);
 
-                countDownLatch.await();
+//                countDownLatch.await();
 
                 //5.如果从IO回来了，怎么执行代码
 
-                return null;
+                return res.get();//阻塞
             }
         });
     }
