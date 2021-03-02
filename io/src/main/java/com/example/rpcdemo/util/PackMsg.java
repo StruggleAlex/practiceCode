@@ -1,4 +1,7 @@
-package com.example.rpc;
+package com.example.rpcdemo.util;
+
+import com.example.rpcdemo.rpc.protocal.MyContent;
+import com.example.rpcdemo.rpc.protocal.MyHeader;
 
 /**
  * @author alex

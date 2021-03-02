@@ -1,4 +1,6 @@
-package com.example.rpc;
+package com.example.rpcdemo.rpc;
+
+import com.example.rpcdemo.util.PackMsg;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +20,7 @@ public class ResponseMappingCallBack {
     }
 
     public  static  void  runCallBack(PackMsg packMsg) {
-        CompletableFuture<String> cf = mapping.get(packMsg.getHeader().getRequestID());
+        CompletableFuture<Object> cf = mapping.get(packMsg.getHeader().getRequestID());
         cf.complete(packMsg.getContent().getRes());
         remove(packMsg.getHeader().getRequestID());
     }

@@ -1,4 +1,4 @@
-package com.example.rpc;
+package com.example.rpcdemo.rpc.protocal;
 
 import java.io.Serializable;
 
@@ -9,13 +9,13 @@ public class MyContent  implements Serializable {
     String methodName;
     Class<?>[] parameterTypes;
     Object[] args;
-    String res;
+    Object res;
 
-    public String getRes() {
+    public Object getRes() {
         return res;
     }
 
-    public void setRes(String res) {
+    public void setRes(Object res) {
         this.res = res;
     }
 

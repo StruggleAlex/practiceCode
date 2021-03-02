@@ -1,5 +1,8 @@
-package com.example.rpc;
+package com.example.rpcdemo.rpc.transport;
 
+import com.example.rpcdemo.util.PackMsg;
+import com.example.rpcdemo.rpc.protocal.MyContent;
+import com.example.rpcdemo.rpc.protocal.MyHeader;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -15,6 +18,7 @@ import java.util.List;
  */
 public class ServerDecode extends ByteToMessageDecoder {
 
+    int headerLength = 111;
     /**
      * 父类里面一定有 channelread { 前边老的 拼接buf decode() ；剩余留存 ; 对out 遍历} --》 bytebuf
      * @param ctx
@@ -26,8 +30,8 @@ public class ServerDecode extends ByteToMessageDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
 
 //        System.out.println("channel start " + buf.readableBytes());
-        while (buf.readableBytes() >= 94) {
-            byte[] bytes = new byte[94];
+        while (buf.readableBytes() >= headerLength) {
+            byte[] bytes = new byte[headerLength];
 //            指针会移动
 //            buf.readBytes(bytes);
 //            指针不会移动
@@ -39,9 +43,9 @@ public class ServerDecode extends ByteToMessageDecoder {
 //            System.out.println("server requestID"+header.getRequestID());
 
 //            通信协议
-            if (buf.readableBytes() >= header.getDataLen()) {
+            if (buf.readableBytes()-headerLength >= header.getDataLen()) {
 //                处理指针
-                buf.readBytes(94);
+                buf.readBytes(headerLength);
                 //移动指针到body开始的位置
                 byte[] data = new byte[(int) header.getDataLen()];
                 buf.readBytes(data);

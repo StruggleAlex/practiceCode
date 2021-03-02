@@ -1,4 +1,4 @@
-package com.example.rpc;
+package com.example.rpcdemo.rpc.srvice;
 
 public interface Bus {
 

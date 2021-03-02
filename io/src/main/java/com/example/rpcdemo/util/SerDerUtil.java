@@ -1,4 +1,4 @@
-package com.example.rpc;
+package com.example.rpcdemo.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

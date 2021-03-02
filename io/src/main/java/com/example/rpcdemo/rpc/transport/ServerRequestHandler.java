@@ -1,9 +1,17 @@
-package com.example.rpc;
+package com.example.rpcdemo.rpc.transport;
 
+import com.example.rpcdemo.rpc.Dispatcher;
+import com.example.rpcdemo.rpc.protocal.MyContent;
+import com.example.rpcdemo.rpc.protocal.MyHeader;
+import com.example.rpcdemo.util.PackMsg;
+import com.example.rpcdemo.util.SerDerUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author alex
@@ -12,6 +20,11 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class ServerRequestHandler extends ChannelInboundHandlerAdapter {
 
+    Dispatcher dis;
+
+    public ServerRequestHandler(Dispatcher dis) {
+        this.dis = dis;
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -35,17 +48,33 @@ public class ServerRequestHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run() {
                 //有新的header+content
-                String execThreadName = Thread.currentThread().getName();
+                String serviceName = requestMsg.getContent().getName();
+                String method = requestMsg.getContent().getMethodName();
+                Object c = dis.get(serviceName);
+                Class<?> clazz = c.getClass();
+                Object res = null;
+                try {
+
+
+                    Method m = clazz.getMethod(method, requestMsg.getContent().getParameterTypes());
+                    res = m.invoke(c, requestMsg.getContent().getArgs());
+
+
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
                 MyContent content = new MyContent();
 
-                String s = "io thread: " + ioThreadName + " exec thread: " + execThreadName + " from args: " + requestMsg.content.getArgs()[0];
 
-                System.out.println(s);
 
-                content.setRes(s);
+                content.setRes(res);
                 byte[] contentByte = SerDerUtil.ser(content);
                 MyHeader resHeader = new MyHeader();
-                resHeader.setRequestID(requestMsg.header.getRequestID());
+                resHeader.setRequestID(requestMsg.getHeader().getRequestID());
                 resHeader.setFlag(0x14141424);
                 resHeader.setDataLen(contentByte.length);
                 byte[] headerByte = SerDerUtil.ser(resHeader);
