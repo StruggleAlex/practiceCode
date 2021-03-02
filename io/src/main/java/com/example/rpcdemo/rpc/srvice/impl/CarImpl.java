@@ -17,6 +17,9 @@ public class CarImpl implements Car {
 
     @Override
     public Person getPerson(String name, Integer age) {
-        return new Person(name,age);
+        Person p = new Person();
+        p.setName(name);
+        p.setAge(age);
+        return p;
     }
 }

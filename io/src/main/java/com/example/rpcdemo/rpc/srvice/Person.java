@@ -1,19 +1,21 @@
 package com.example.rpcdemo.rpc.srvice;
 
+import java.io.Serializable;
+
 /**
  * @author alex
  * @date 2021-03-02 21:16
  * @descript
  */
-public class Person {
+public class Person implements Serializable {
 
     String name;
 
     Integer age;
 
-    public Person(String name, Integer age) {
-
+    public Person() {
     }
+
 
 
     public String getName() {
